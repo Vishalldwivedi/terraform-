@@ -9,6 +9,7 @@ variable env_prefix{}// for every resouce we are creatin make a prefix for the e
 // that it will be deployed to
 variable my_ip{} 
 variable instance_type{}
+variable my_public_key_location{}
 
 resource "aws_vpc" "myapp-vpc" {
   cidr_block = var.vpc_cidr_block
@@ -164,6 +165,9 @@ resource "aws_instance" "myapp-server"{
 output "aws_ami_id" {
   value = data.aws_ami.latest-amazon-linux-image.id 
   }
+  output "ec2_public_ip" {
+  value = aws_instance.myapp-server.public_ip
+  }
   
   resource "aws_instance" "myapp-server" {
   ami = data.aws_ami.latest-amazon-linux-image.id
@@ -174,11 +178,24 @@ output "aws_ami_id" {
   
   associate_public_ip_address = true
   
-  key_name = "terraform-server-key-pair"
-  
+  key_name = aws_key_pair.ssh-key.key_name
+
+  //below adding ec2 user in docker group , port 8080 on host bind with port 80 on nginx
+  // we need to ensure that our instance get destroyed and recreated when we start our instace every time.
+  // for that we have documentaion aws_instance on terraform -> user_data_replace_on_change
+  // this block below will only get executed once .
+  user_data =file("entry-script.sh")
+
+  user_data_replace_on_change = true
+            
   tags = {// naming our resouces for better understand of whole does this belong
       Name : "${var.env_prefix}-server"
     }
+}
+
+resource "aws_key_pair" "ssh-key"{
+  key_name = "dev-server-key"
+  public_key = file(var.my_public_key_location)//a key pair must already exist locally on our machine 
 }
 
 
