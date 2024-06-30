@@ -10,6 +10,7 @@ variable env_prefix{}// for every resouce we are creatin make a prefix for the e
 variable my_ip{} 
 variable instance_type{}
 variable my_public_key_location{}
+variable my_private_key_location{}
 
 resource "aws_vpc" "myapp-vpc" {
   cidr_block = var.vpc_cidr_block
@@ -187,7 +188,29 @@ output "aws_ami_id" {
   user_data =file("entry-script.sh")
 
   user_data_replace_on_change = true
-            
+    
+    # connection {
+    #   type = "ssh"// by default its ssh 
+    #   host = self.public_ip//self reference to the resouce which we are in ie. instance
+    #   user = "ec2_user"
+    #   private_key = file(var.my_private_key_location)
+    # }
+    # provisioner "file"{
+    #   source = "entry-script.sh"
+    #   destination = "/home/ec2-user/entry-script-ec2.sh"
+    # }
+    # provisioner "remote-exec"{
+    #     # inline  = [
+    #     #   "export ENV=dev",
+    #     #   "mkdir newdir",
+    #     # ] 
+    #     # inline = ["/home/ec2-user/entry-script-ec2.sh"]
+    #     script = "entry-script.sh"
+    # }
+    # provisioner "local-exec"{
+    #   command = "echo ${self.public_ip}>output.txt"
+    # }
+
   tags = {// naming our resouces for better understand of whole does this belong
       Name : "${var.env_prefix}-server"
     }
@@ -197,5 +220,4 @@ resource "aws_key_pair" "ssh-key"{
   key_name = "dev-server-key"
   public_key = file(var.my_public_key_location)//a key pair must already exist locally on our machine 
 }
-
 
